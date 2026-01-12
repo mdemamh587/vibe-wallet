@@ -193,10 +193,345 @@ function App() {
   const handlePhotoChange = () => {
     alert('Photo upload feature - will be implemented with Firebase Storage');
   };
+// তোমার App.jsx এ এই functions যোগ করো
 
-  const generateReport = (type) => {
-    alert(`Generating ${type} report... (Coming soon)`);
+// Monthly/Weekly Report Generator Function
+const generateReport = (type) => {
+  const now = new Date();
+  let startDate, endDate;
+  
+  if (type === 'weekly') {
+    // Last 7 days
+    startDate = new Date(now);
+    startDate.setDate(now.getDate() - 6);
+    endDate = now;
+  } else {
+    // Current month
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  }
+  
+  // Filter expenses for the period
+  const periodExpenses = expenses.filter(e => {
+    const expDate = new Date(e.createdAt);
+    return expDate >= startDate && expDate <= endDate;
+  });
+  
+  // Calculate totals
+  const totalExpenses = periodExpenses.reduce((sum, e) => sum + e.amount, 0);
+  
+  // Assume deposits in the period (you can track this in Firebase too)
+  const totalIncome = 0; // Update this if you track deposits
+  const netSavings = totalIncome - totalExpenses;
+  
+  // Category breakdown
+  const categoryBreakdown = {};
+  periodExpenses.forEach(e => {
+    categoryBreakdown[e.category] = (categoryBreakdown[e.category] || 0) + e.amount;
+  });
+  
+  // Wallet distribution
+  const walletDist = {};
+  periodExpenses.forEach(e => {
+    walletDist[e.wallet] = (walletDist[e.wallet] || 0) + e.amount;
+  });
+  
+  // Top 5 expenses
+  const topExpenses = [...periodExpenses]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 5);
+  
+  // Generate HTML for print
+  const reportHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Vibe Wallet - ${type === 'monthly' ? 'Monthly' : 'Weekly'} Report</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: 'Segoe UI', Arial, sans-serif; 
+          padding: 40px; 
+          background: #fff; 
+          color: #000; 
+          line-height: 1.6;
+        }
+        .header { 
+          text-align: center; 
+          margin-bottom: 40px; 
+          border-bottom: 4px solid #6366f1; 
+          padding-bottom: 20px; 
+        }
+        .header h1 { 
+          color: #6366f1; 
+          font-size: 36px; 
+          margin-bottom: 10px; 
+          letter-spacing: 4px; 
+          font-weight: 900;
+        }
+        .header .subtitle { 
+          color: #666; 
+          font-size: 18px; 
+          font-weight: bold; 
+          margin: 5px 0;
+        }
+        .header .date-range { 
+          color: #999; 
+          font-size: 14px; 
+        }
+        .summary { 
+          display: grid; 
+          grid-template-columns: 1fr 1fr 1fr; 
+          gap: 20px; 
+          margin: 40px 0; 
+        }
+        .summary-card { 
+          border: 3px solid #e5e7eb; 
+          border-radius: 16px; 
+          padding: 25px; 
+          text-align: center; 
+        }
+        .summary-card.income { 
+          border-color: #10b981; 
+          background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); 
+        }
+        .summary-card.expense { 
+          border-color: #ef4444; 
+          background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); 
+        }
+        .summary-card.savings { 
+          border-color: #6366f1; 
+          background: linear-gradient(135deg, #eef2ff 0%, #ddd6fe 100%); 
+        }
+        .summary-card h3 { 
+          font-size: 11px; 
+          text-transform: uppercase; 
+          color: #666; 
+          margin-bottom: 15px; 
+          letter-spacing: 1px;
+          font-weight: 900;
+        }
+        .summary-card .amount { 
+          font-size: 32px; 
+          font-weight: 900; 
+          margin: 0; 
+        }
+        .summary-card.income .amount { color: #10b981; }
+        .summary-card.expense .amount { color: #ef4444; }
+        .summary-card.savings .amount { color: #6366f1; }
+        .section { 
+          margin: 40px 0; 
+          page-break-inside: avoid;
+        }
+        .section h2 { 
+          font-size: 20px; 
+          color: #6366f1; 
+          border-bottom: 3px solid #e5e7eb; 
+          padding-bottom: 12px; 
+          margin-bottom: 20px;
+          font-weight: 900;
+        }
+        .breakdown { 
+          display: grid; 
+          grid-template-columns: 1fr 1fr; 
+          gap: 12px; 
+          margin-top: 20px; 
+        }
+        .breakdown-item { 
+          display: flex; 
+          justify-content: space-between; 
+          padding: 15px; 
+          background: #f9fafb; 
+          border-radius: 10px; 
+          border-left: 4px solid #6366f1;
+        }
+        .breakdown-item strong { color: #111; }
+        .breakdown-item span { 
+          color: #6366f1; 
+          font-weight: bold; 
+        }
+        .table { 
+          width: 100%; 
+          border-collapse: collapse; 
+          margin-top: 20px; 
+        }
+        .table th { 
+          background: #6366f1; 
+          color: white; 
+          padding: 15px; 
+          text-align: left; 
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .table td { 
+          padding: 15px; 
+          border-bottom: 2px solid #e5e7eb; 
+          font-size: 14px;
+        }
+        .table tr:nth-child(even) { background: #f9fafb; }
+        .table tr:hover { background: #f3f4f6; }
+        .footer { 
+          text-align: center; 
+          margin-top: 60px; 
+          padding-top: 30px; 
+          border-top: 3px solid #e5e7eb; 
+          color: #666; 
+          font-size: 12px; 
+        }
+        .footer strong { color: #6366f1; }
+        .no-data { 
+          text-align: center; 
+          padding: 40px; 
+          color: #999; 
+          font-style: italic; 
+        }
+        @media print {
+          body { padding: 20px; }
+          .summary { gap: 15px; }
+          .section { margin: 30px 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>⚡ VIBE WALLET</h1>
+        <div class="subtitle">${type === 'monthly' ? 'MONTHLY' : 'WEEKLY'} FINANCIAL REPORT</div>
+        <div class="date-range">
+          Period: ${startDate.toLocaleDateString('en-GB')} - ${endDate.toLocaleDateString('en-GB')}
+        </div>
+        <div class="date-range">Generated on ${new Date().toLocaleString('en-GB')}</div>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card income">
+          <h3>💰 Total Income</h3>
+          <p class="amount">৳${totalIncome.toLocaleString()}</p>
+        </div>
+        <div class="summary-card expense">
+          <h3>💸 Total Expenses</h3>
+          <p class="amount">৳${totalExpenses.toLocaleString()}</p>
+        </div>
+        <div class="summary-card savings">
+          <h3>💎 Net Savings</h3>
+          <p class="amount">${netSavings >= 0 ? '+' : ''}৳${netSavings.toLocaleString()}</p>
+        </div>
+      </div>
+
+      ${Object.keys(categoryBreakdown).length > 0 ? `
+      <div class="section">
+        <h2>📊 Category Breakdown</h2>
+        <div class="breakdown">
+          ${Object.entries(categoryBreakdown)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, amt]) => `
+              <div class="breakdown-item">
+                <strong>${cat}</strong>
+                <span>৳${amt.toLocaleString()}</span>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+      ` : '<div class="no-data">No category data available</div>'}
+
+      ${topExpenses.length > 0 ? `
+      <div class="section">
+        <h2>🏆 Top 5 Biggest Expenses</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${topExpenses.map(e => `
+              <tr>
+                <td>${new Date(e.createdAt).toLocaleDateString('en-GB')}</td>
+                <td><strong>${e.text}</strong></td>
+                <td>${e.category}</td>
+                <td><strong>৳${e.amount.toLocaleString()}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : ''}
+
+      ${Object.keys(walletDist).length > 0 ? `
+      <div class="section">
+        <h2>💳 Wallet Distribution</h2>
+        <div class="breakdown">
+          ${Object.entries(walletDist)
+            .sort((a, b) => b[1] - a[1])
+            .map(([wallet, amt]) => `
+              <div class="breakdown-item">
+                <strong>${wallet}</strong>
+                <span>৳${amt.toLocaleString()} (${((amt/totalExpenses)*100).toFixed(1)}%)</span>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
+      ${periodExpenses.length > 0 ? `
+      <div class="section">
+        <h2>📝 All Transactions (${periodExpenses.length} total)</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Wallet</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${periodExpenses
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .map(e => `
+                <tr>
+                  <td>${new Date(e.createdAt).toLocaleDateString('en-GB')}</td>
+                  <td>${e.text}</td>
+                  <td>${e.category}</td>
+                  <td>${e.wallet}</td>
+                  <td><strong>৳${e.amount.toLocaleString()}</strong></td>
+                </tr>
+              `).join('')}
+          </tbody>
+        </table>
+      </div>
+      ` : '<div class="no-data">No transactions found in this period</div>'}
+
+      <div class="footer">
+        <p><strong>VIBE WALLET</strong> - Your Personal Finance Tracker</p>
+        <p>This is an automated report generated by Vibe Wallet</p>
+        <p>For support, contact: support@vibewallet.com</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  // Open print dialog
+  const printWindow = window.open('', '', 'height=800,width=800');
+  printWindow.document.write(reportHTML);
+  printWindow.document.close();
+  
+  // Wait for content to load, then print
+  printWindow.onload = function() {
+    printWindow.focus();
+    printWindow.print();
+    
+    // Close after printing (optional)
+    // printWindow.onafterprint = function() {
+    //   printWindow.close();
+    // };
   };
+};
 
   const resetAllData = () => {
     if (window.confirm('⚠️ Are you sure? This will delete ALL your data permanently!')) {
