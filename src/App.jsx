@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, googleProvider, signInWithPopup, signOut, db, ref, push, onValue } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { remove, set } from 'firebase/database';
-import { ShoppingCart, ArrowLeftRight, Users, Plus, Home, LogOut, CheckCircle2, Zap, Moon, Sun, Calendar as CalendarIcon, Bell, Info, Download } from 'lucide-react';
+import { ShoppingCart, ArrowLeftRight, Users, Plus, Home, LogOut, CheckCircle2, Zap, Moon, Sun, Calendar as CalendarIcon, Bell, Info, Download, User, Edit2, Save, X, Camera, BarChart3, Phone, Mail, Globe, DollarSign, FileText, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -27,7 +27,21 @@ function App() {
   const [debtType, setDebtType] = useState('Obtain Money');
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // --- নতুন যোগ করা Excel Download ফাংশন ---
+  // Profile Section States
+  const [userData, setUserData] = useState({
+    fullName: '',
+    dateOfBirth: '',
+    phone: '',
+    joinedDate: new Date().toISOString().split('T')[0],
+    language: 'Bangla',
+    currency: 'BDT (৳)',
+    photoURL: ''
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [tempData, setTempData] = useState({ ...userData });
+  const [saving, setSaving] = useState(false);
+
+  // Download Excel function
   const downloadExcel = () => {
     if (expenses.length === 0) { alert("কোনো ডাটা নেই!"); return; }
     const data = expenses.map(e => ({
@@ -47,7 +61,7 @@ function App() {
     { name: 'যাতায়াত', icon: '🚌', color: '#6366f1' }, 
     { name: 'পড়াশোনা', icon: '📚', color: '#10b981' },
     { name: 'পান', icon: '☕', color: '#f59e0b' }, 
-    { name: 'নাস্তা', icon: '🥐', color: '#ef4444' },
+    { name: 'নাস্তা', icon: '🥘', color: '#ef4444' },
     { name: 'দান', icon: '🤲', color: '#8b5cf6' }, 
     { name: 'জমা', icon: '🏦', color: '#ec4899' },
     { name: 'শখ', icon: '🎨', color: '#06b6d4' }, 
@@ -55,27 +69,51 @@ function App() {
     { name: 'বাসা', icon: '🏠', color: '#f97316' }, 
     { name: 'ঘুরা', icon: '🏞️', color: '#84cc16' },
     { name: 'গিফট', icon: '🎁', color: '#d946ef' }, 
-    { name: 'কোচিং', icon: '🏫', color: '#64748b' }
+    { name: 'কোচিং', icon: '🫠', color: '#64748b' }
   ];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        // Load expenses
         onValue(ref(db, 'expenses/' + currentUser.uid), (snapshot) => {
           const data = snapshot.val();
           setExpenses(data ? Object.keys(data).map(id => ({ id, ...data[id] })) : []);
         });
+        // Load wallets
         onValue(ref(db, 'wallets/' + currentUser.uid), (snapshot) => {
           if (snapshot.exists()) setWallets(snapshot.val());
         });
+        // Load shopping list
         onValue(ref(db, 'shopping/' + currentUser.uid), (snapshot) => {
           const data = snapshot.val();
           setShoppingList(data ? Object.keys(data).map(id => ({ id, ...data[id] })) : []);
         });
+        // Load debts
         onValue(ref(db, 'debts/' + currentUser.uid), (snapshot) => {
           const data = snapshot.val();
           setDebts(data ? Object.keys(data).map(id => ({ id, ...data[id] })) : []);
+        });
+        // Load user profile
+        onValue(ref(db, 'users/' + currentUser.uid + '/profile'), (snapshot) => {
+          if (snapshot.exists()) {
+            setUserData(snapshot.val());
+            setTempData(snapshot.val());
+          } else {
+            // Initialize default profile
+            const defaultProfile = {
+              fullName: currentUser.displayName || '',
+              dateOfBirth: '',
+              phone: '',
+              joinedDate: new Date().toISOString().split('T')[0],
+              language: 'Bangla',
+              currency: 'BDT (৳)',
+              photoURL: currentUser.photoURL || ''
+            };
+            setUserData(defaultProfile);
+            setTempData(defaultProfile);
+          }
         });
       }
     });
@@ -133,9 +171,47 @@ function App() {
     setText(''); setAmount('');
   };
 
+  // Profile Functions
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      await set(ref(db, 'users/' + user.uid + '/profile'), tempData);
+      setUserData({ ...tempData });
+      setEditMode(false);
+      alert('✅ Profile updated successfully!');
+    } catch (error) {
+      alert('❌ Error: ' + error.message);
+    }
+    setSaving(false);
+  };
+
+  const handleCancelEdit = () => {
+    setTempData({ ...userData });
+    setEditMode(false);
+  };
+
+  const handlePhotoChange = () => {
+    alert('Photo upload feature - will be implemented with Firebase Storage');
+  };
+
+  const generateReport = (type) => {
+    alert(`Generating ${type} report... (Coming soon)`);
+  };
+
+  const resetAllData = () => {
+    if (window.confirm('⚠️ Are you sure? This will delete ALL your data permanently!')) {
+      // Delete all user data
+      set(ref(db, 'expenses/' + user.uid), null);
+      set(ref(db, 'wallets/' + user.uid), null);
+      set(ref(db, 'shopping/' + user.uid), null);
+      set(ref(db, 'debts/' + user.uid), null);
+      alert('✅ All data has been reset!');
+    }
+  };
+
   const themeClass = darkMode ? "bg-[#0B0E14] text-white" : "bg-[#F3F4F6] text-slate-900";
   const cardClass = darkMode ? "bg-[#161B22] border-gray-800" : "bg-white border-gray-200 shadow-sm";
-  const inputClass = darkMode ? "bg-[#0B0E14] border-gray-700 text-white" : "bg-gray-50 border-gray-300 text-slate-900";
+  const inputClass = darkMode ? "bg-[#1C2128] border-gray-700 text-white placeholder:text-gray-500" : "bg-white border-gray-300 text-slate-900 placeholder:text-gray-400";
 
   return (
     <div className={`min-h-screen ${themeClass} font-sans transition-colors duration-300`}>
@@ -344,190 +420,471 @@ function App() {
               </div>
             )}
 
-{/* DEBTS TAB - UPDATED DESIGN */}
-{activeTab === 'debts' && (
-  <div className="space-y-4">
-    {/* Header with Icon */}
-    <div className="text-center mb-6">
-      <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600/20 rounded-full mb-3">
-        <Users size={32} className="text-indigo-500" />
-      </div>
-      <h2 className="text-2xl font-black uppercase tracking-widest text-indigo-400">Debt Manager</h2>
-      <p className="text-xs opacity-40 mt-1">Track who owes you and who you owe</p>
-    </div>
+            {/* DEBTS TAB - UPDATED DESIGN */}
+            {activeTab === 'debts' && (
+              <div className="space-y-4">
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600/20 rounded-full mb-3">
+                    <Users size={32} className="text-indigo-500" />
+                  </div>
+                  <h2 className="text-2xl font-black uppercase tracking-widest text-indigo-400">Debt Manager</h2>
+                  <p className="text-xs opacity-40 mt-1">Track who owes you and who you owe</p>
+                </div>
 
-    {/* Summary Cards */}
-    <div className="grid grid-cols-2 gap-3 mb-6">
-      {/* Receive Card */}
-      <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-2 border-emerald-500/30 rounded-2xl p-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full -mr-10 -mt-10"></div>
-        <ArrowLeftRight size={20} className="text-emerald-500 mb-2 rotate-90" />
-        <p className="text-[9px] font-black uppercase tracking-wider text-emerald-400/60">You'll Receive</p>
-        <p className="text-2xl font-black text-emerald-400 mt-1">৳{totalObtain.toLocaleString()}</p>
-        <div className="mt-2 flex items-center gap-1">
-          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="text-[8px] text-emerald-400/60 font-bold">{debts.filter(d => d.type === 'Obtain Money').length} people</span>
-        </div>
-      </div>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-2 border-emerald-500/30 rounded-2xl p-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full -mr-10 -mt-10"></div>
+                    <ArrowLeftRight size={20} className="text-emerald-500 mb-2 rotate-90" />
+                    <p className="text-[9px] font-black uppercase tracking-wider text-emerald-400/60">You'll Receive</p>
+                    <p className="text-2xl font-black text-emerald-400 mt-1">৳{totalObtain.toLocaleString()}</p>
+                    <div className="mt-2 flex items-center gap-1">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                      <span className="text-[8px] text-emerald-400/60 font-bold">{debts.filter(d => d.type === 'Obtain Money').length} people</span>
+                    </div>
+                  </div>
 
-      {/* Payable Card */}
-      <div className="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-2 border-rose-500/30 rounded-2xl p-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/5 rounded-full -mr-10 -mt-10"></div>
-        <ArrowLeftRight size={20} className="text-rose-500 mb-2 -rotate-90" />
-        <p className="text-[9px] font-black uppercase tracking-wider text-rose-400/60">You'll Pay</p>
-        <p className="text-2xl font-black text-rose-400 mt-1">৳{totalLoan.toLocaleString()}</p>
-        <div className="mt-2 flex items-center gap-1">
-          <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
-          <span className="text-[8px] text-rose-400/60 font-bold">{debts.filter(d => d.type === 'Loan').length} people</span>
-        </div>
-      </div>
-    </div>
+                  <div className="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-2 border-rose-500/30 rounded-2xl p-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/5 rounded-full -mr-10 -mt-10"></div>
+                    <ArrowLeftRight size={20} className="text-rose-500 mb-2 -rotate-90" />
+                    <p className="text-[9px] font-black uppercase tracking-wider text-rose-400/60">You'll Pay</p>
+                    <p className="text-2xl font-black text-rose-400 mt-1">৳{totalLoan.toLocaleString()}</p>
+                    <div className="mt-2 flex items-center gap-1">
+                      <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+                      <span className="text-[8px] text-rose-400/60 font-bold">{debts.filter(d => d.type === 'Loan').length} people</span>
+                    </div>
+                  </div>
+                </div>
 
-    {/* Net Balance */}
-    <div className={`${cardClass} p-4 rounded-2xl border text-center`}>
-      <p className="text-[8px] font-black uppercase opacity-40 mb-1">Net Balance</p>
-      <p className={`text-xl font-black ${(totalObtain - totalLoan) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-        {(totalObtain - totalLoan) >= 0 ? '+' : ''}৳{(totalObtain - totalLoan).toLocaleString()}
-      </p>
-    </div>
+                <div className={`${cardClass} p-4 rounded-2xl border text-center`}>
+                  <p className="text-[8px] font-black uppercase opacity-40 mb-1">Net Balance</p>
+                  <p className={`text-xl font-black ${(totalObtain - totalLoan) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {(totalObtain - totalLoan) >= 0 ? '+' : ''}৳{(totalObtain - totalLoan).toLocaleString()}
+                  </p>
+                </div>
 
-    {/* Add New Debt Form */}
-    <div className={`${cardClass} p-5 rounded-[2rem] border`}>
-      <h3 className="font-black mb-4 text-indigo-500 flex items-center gap-2">
-        <Plus size={18} />
-        ADD NEW DEBT
-      </h3>
-      
-      <div className="space-y-3">
-        <input 
-          value={debtName} 
-          onChange={(e) => setDebtName(e.target.value)} 
-          placeholder="Person's Name" 
-          className={`w-full p-4 ${inputClass} rounded-xl border outline-none focus:border-indigo-500 transition-all font-bold text-sm`} 
-        />
-        
-        <input 
-          type="number" 
-          value={debtAmount} 
-          onChange={(e) => setDebtAmount(e.target.value)} 
-          placeholder="Amount (৳)" 
-          className={`w-full p-4 ${inputClass} rounded-xl border font-black text-sm outline-none focus:border-indigo-500 transition-all`} 
-        />
+                <div className={`${cardClass} p-5 rounded-[2rem] border`}>
+                  <h3 className="font-black mb-4 text-indigo-500 flex items-center gap-2">
+                    <Plus size={18} />
+                    ADD NEW DEBT
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <input 
+                      value={debtName} 
+                      onChange={(e) => setDebtName(e.target.value)} 
+                      placeholder="Person's Name" 
+                      className={`w-full p-4 ${inputClass} rounded-xl border outline-none focus:border-indigo-500 transition-all font-bold text-sm`} 
+                    />
+                    
+                    <input 
+                      type="number" 
+                      value={debtAmount} 
+                      onChange={(e) => setDebtAmount(e.target.value)} 
+                      placeholder="Amount (৳)" 
+                      className={`w-full p-4 ${inputClass} rounded-xl border font-black text-sm outline-none focus:border-indigo-500 transition-all`} 
+                    />
 
-        <div className="grid grid-cols-2 gap-2">
-          <button 
-            onClick={() => setDebtType('Obtain Money')}
-            className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${debtType === 'Obtain Money' ? 'bg-emerald-600 border-emerald-400 text-white scale-95' : 'border-gray-700 text-gray-500'}`}
-          >
-            💰 I'll GET
-          </button>
-          <button 
-            onClick={() => setDebtType('Loan')}
-            className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${debtType === 'Loan' ? 'bg-rose-600 border-rose-400 text-white scale-95' : 'border-gray-700 text-gray-500'}`}
-          >
-            💸 I'll GIVE
-          </button>
-        </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => setDebtType('Obtain Money')}
+                        className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${debtType === 'Obtain Money' ? 'bg-emerald-600 border-emerald-400 text-white scale-95' : 'border-gray-700 text-gray-500'}`}
+                      >
+                        💰 I'll GET
+                      </button>
+                      <button 
+                        onClick={() => setDebtType('Loan')}
+                        className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${debtType === 'Loan' ? 'bg-rose-600 border-rose-400 text-white scale-95' : 'border-gray-700 text-gray-500'}`}
+                      >
+                        💸 I'll GIVE
+                      </button>
+                    </div>
 
-        <button 
-          onClick={() => {
-            if(debtName && debtAmount){
-              push(ref(db, 'debts/'+user.uid), {
-                name: debtName, 
-                amount: parseFloat(debtAmount), 
-                type: debtType
-              }); 
-              setDebtName(''); 
-              setDebtAmount('');
-            }
-          }}
-          className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-black text-sm active:scale-95 transition-all shadow-lg shadow-indigo-500/30"
-        >
-          ADD DEBT
-        </button>
-      </div>
-    </div>
+                    <button 
+                      onClick={() => {
+                        if(debtName && debtAmount){
+                          push(ref(db, 'debts/'+user.uid), {
+                            name: debtName, 
+                            amount: parseFloat(debtAmount), 
+                            type: debtType
+                          }); 
+                          setDebtName(''); 
+                          setDebtAmount('');
+                        }
+                      }}
+                      className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-black text-sm active:scale-95 transition-all shadow-lg shadow-indigo-500/30"
+                    >
+                      ADD DEBT
+                    </button>
+                  </div>
+                </div>
 
-    {/* Debt Lists - Receive Section */}
-    {debts.filter(d => d.type === 'Obtain Money').length > 0 && (
-      <div className="space-y-2">
-        <h4 className="text-xs font-black uppercase opacity-40 px-2 flex items-center gap-2">
-          <ArrowLeftRight size={14} className="text-emerald-500 rotate-90" />
-          People who owe you
-        </h4>
-        {debts.filter(d => d.type === 'Obtain Money').map(d => (
-          <div 
-            key={d.id} 
-            className="bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 p-4 rounded-2xl flex justify-between items-center group hover:scale-[1.02] transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center font-black text-emerald-400 text-lg border-2 border-emerald-500/30">
-                {d.name.charAt(0).toUpperCase()}
+                {debts.filter(d => d.type === 'Obtain Money').length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase opacity-40 px-2 flex items-center gap-2">
+                      <ArrowLeftRight size={14} className="text-emerald-500 rotate-90" />
+                      People who owe you
+                    </h4>
+                    {debts.filter(d => d.type === 'Obtain Money').map(d => (
+                      <div 
+                        key={d.id} 
+                        className="bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 p-4 rounded-2xl flex justify-between items-center group hover:scale-[1.02] transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center font-black text-emerald-400 text-lg border-2 border-emerald-500/30">
+                            {d.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-black text-white">{d.name}</p>
+                            <p className="text-[8px] uppercase font-bold text-emerald-400/60 tracking-wider">Will pay you</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-black text-emerald-400">৳{d.amount}</span>
+                          <button 
+                            onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))}
+                            className="opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-rose-500/20 rounded-lg"
+                          >
+                            <span className="text-rose-500 text-2xl font-light">×</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {debts.filter(d => d.type === 'Loan').length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-black uppercase opacity-40 px-2 flex items-center gap-2">
+                      <ArrowLeftRight size={14} className="text-rose-500 -rotate-90" />
+                      People you owe
+                    </h4>
+                    {debts.filter(d => d.type === 'Loan').map(d => (
+                      <div 
+                        key={d.id} 
+                        className="bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 p-4 rounded-2xl flex justify-between items-center group hover:scale-[1.02] transition-all"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center font-black text-rose-400 text-lg border-2 border-rose-500/30">
+                            {d.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-black text-white">{d.name}</p>
+                            <p className="text-[8px] uppercase font-bold text-rose-400/60 tracking-wider">You owe them</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-black text-rose-400">৳{d.amount}</span>
+                          <button 
+                            onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))}
+                            className="opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-rose-500/20 rounded-lg"
+                          >
+                            <span className="text-rose-500 text-2xl font-light">×</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {debts.length === 0 && (
+                  <div className="text-center py-16 opacity-20">
+                    <Users className="mx-auto mb-4" size={48} />
+                    <p className="text-sm font-bold">No debts recorded</p>
+                    <p className="text-xs mt-1">Add your first debt above</p>
+                  </div>
+                )}
               </div>
-              <div>
-                <p className="font-black text-white">{d.name}</p>
-                <p className="text-[8px] uppercase font-bold text-emerald-400/60 tracking-wider">Will pay you</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-black text-emerald-400">৳{d.amount}</span>
-              <button 
-                onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))}
-                className="opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-rose-500/20 rounded-lg"
-              >
-                <span className="text-rose-500 text-2xl font-light">×</span>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
+            )}
 
-    {/* Debt Lists - Pay Section */}
-    {debts.filter(d => d.type === 'Loan').length > 0 && (
-      <div className="space-y-2">
-        <h4 className="text-xs font-black uppercase opacity-40 px-2 flex items-center gap-2">
-          <ArrowLeftRight size={14} className="text-rose-500 -rotate-90" />
-          People you owe
-        </h4>
-        {debts.filter(d => d.type === 'Loan').map(d => (
-          <div 
-            key={d.id} 
-            className="bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 p-4 rounded-2xl flex justify-between items-center group hover:scale-[1.02] transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center font-black text-rose-400 text-lg border-2 border-rose-500/30">
-                {d.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <p className="font-black text-white">{d.name}</p>
-                <p className="text-[8px] uppercase font-bold text-rose-400/60 tracking-wider">You owe them</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-black text-rose-400">৳{d.amount}</span>
-              <button 
-                onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))}
-                className="opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-rose-500/20 rounded-lg"
-              >
-                <span className="text-rose-500 text-2xl font-light">×</span>
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
+            {/* PROFILE TAB */}
+            {activeTab === 'profile' && (
+              <div className="space-y-4">
+                <div className="text-center mb-6 relative">
+                  <div className="relative inline-block">
+                    <img 
+                      src={userData.photoURL || user.photoURL} 
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full border-4 border-indigo-500/30 mx-auto mb-3 object-cover"
+                    />
+                    <button 
+                      onClick={handlePhotoChange}
+                      className="absolute bottom-2 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center border-2 border-[#0B0E14] hover:bg-indigo-700 transition-all active:scale-90"
+                    >
+                      <Camera size={14} />
+                    </button>
+                  </div>
+                  <h2 className="text-2xl font-black">{userData.fullName || user.displayName}</h2>
+                  <p className="text-xs opacity-40 mt-1">{user.email}</p>
+                  
+                  {!editMode && (
+                    <button 
+                      onClick={() => setEditMode(true)}
+                      className="mt-4 px-6 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-xl text-xs font-black text-indigo-400 hover:bg-indigo-600/30 active:scale-95 transition-all"
+                    >
+                      <Edit2 size={12} className="inline mr-2" />
+                      EDIT PROFILE
+                    </button>
+                  )}
+                </div>
 
-    {/* Empty State */}
-    {debts.length === 0 && (
-      <div className="text-center py-16 opacity-20">
-        <Users className="mx-auto mb-4" size={48} />
-        <p className="text-sm font-bold">No debts recorded</p>
-        <p className="text-xs mt-1">Add your first debt above</p>
-      </div>
-    )}
-  </div>
-)}
+                <div className={`${cardClass} p-5 rounded-[2rem] border`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-black uppercase text-indigo-400">Personal Info</h3>
+                    {editMode && (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={handleSaveProfile}
+                          disabled={saving}
+                          className="px-4 py-2 bg-emerald-600 rounded-xl text-xs font-black hover:bg-emerald-700 active:scale-90 transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <Save size={14} />
+                          {saving ? 'SAVING...' : 'SAVE'}
+                        </button>
+                        <button 
+                          onClick={handleCancelEdit}
+                          disabled={saving}
+                          className="px-4 py-2 bg-rose-600 rounded-xl text-xs font-black hover:bg-rose-700 active:scale-90 transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <X size={14} />
+                          CANCEL
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[9px] font-black uppercase opacity-40 mb-2 block flex items-center gap-1">
+                        <User size={10} /> Full Name *
+                      </label>
+                      {editMode ? (
+                        <input 
+                          type="text"
+                          value={tempData.fullName}
+                          onChange={(e) => setTempData({...tempData, fullName: e.target.value})}
+                          placeholder="Enter your full name"
+                          className={`w-full p-3 ${inputClass} rounded-xl border text-sm font-bold outline-none focus:border-indigo-500 transition-all`}
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-500/5 rounded-xl">
+                          <p className="font-bold text-sm">{userData.fullName || 'Not set'}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] font-black uppercase opacity-40 mb-2 block flex items-center gap-1">
+                        <CalendarIcon size={10} /> Date of Birth *
+                      </label>
+                      {editMode ? (
+                        <input 
+                          type="date"
+                          value={tempData.dateOfBirth}
+                          onChange={(e) => setTempData({...tempData, dateOfBirth: e.target.value})}
+                          className={`w-full p-3 ${inputClass} rounded-xl border text-sm font-bold outline-none focus:border-indigo-500 transition-all`}
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-500/5 rounded-xl">
+                          <p className="font-bold text-sm">
+                            {userData.dateOfBirth ? new Date(userData.dateOfBirth).toLocaleDateString('en-GB', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            }) : 'Not set'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] font-black uppercase opacity-40 mb-2 block flex items-center gap-1">
+                        <Mail size={10} /> Email Address
+                      </label>
+                      <div className="p-3 bg-gray-500/5 rounded-xl border border-gray-700/50">
+                        <p className="font-bold text-sm opacity-60">{user.email}</p>
+                        <p className="text-[7px] text-yellow-400/60 mt-1 flex items-center gap-1">
+                          🔒 Linked with Google Account (Cannot be changed)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] font-black uppercase opacity-40 mb-2 block flex items-center gap-1">
+                        <Phone size={10} /> Phone Number
+                      </label>
+                      {editMode ? (
+                        <input 
+                          type="tel"
+                          value={tempData.phone}
+                          onChange={(e) => setTempData({...tempData, phone: e.target.value})}
+                          placeholder="+880 1XXX-XXXXXX"
+                          className={`w-full p-3 ${inputClass} rounded-xl border text-sm font-bold outline-none focus:border-indigo-500 transition-all`}
+                        />
+                      ) : (
+                        <div className="p-3 bg-gray-500/5 rounded-xl">
+                          <p className="font-bold text-sm">{userData.phone || 'Not set'}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[9px] font-black uppercase opacity-40 mb-2 block flex items-center gap-1">
+                        <CalendarIcon size={10} /> Member Since
+                      </label>
+                      <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                        <p className="font-bold text-sm text-indigo-400">
+                          {new Date(userData.joinedDate).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {editMode && (
+                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                      <p className="text-[8px] text-yellow-400 font-bold flex items-center gap-2">
+                        ⚠️ Changes will be saved to your account permanently
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={`${cardClass} p-5 rounded-[2rem] border`}>
+                  <h3 className="text-sm font-black uppercase text-indigo-400 mb-4">App Settings</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-gray-500/5 rounded-xl hover:bg-gray-500/10 transition-all">
+                      <div className="flex items-center gap-3">
+                        {darkMode ? <Moon size={18} className="text-indigo-400" /> : <Sun size={18} className="text-yellow-400" />}
+                        <div>
+                          <p className="text-sm font-bold">Dark Mode</p>
+                          <p className="text-[8px] opacity-40">Theme preference</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setDarkMode(!darkMode)}
+                        className={`w-14 h-7 rounded-full transition-all ${darkMode ? 'bg-indigo-600' : 'bg-gray-600'} relative`}
+                      >
+                        <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 transition-all shadow-lg ${darkMode ? 'right-0.5' : 'left-0.5'}`}></div>
+                      </button>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-gray-500/5 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <DollarSign size={18} className="text-emerald-400" />
+                        <div>
+                          <p className="text-sm font-bold">Currency</p>
+                          <p className="text-[8px] opacity-40">Default currency</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg">{userData.currency}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 bg-gray-500/5 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Globe size={18} className="text-blue-400" />
+                        <div>
+                          <p className="text-sm font-bold">Language</p>
+                          <p className="text-[8px] opacity-40">App language</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-blue-400 bg-blue-500/10 px-3 py-1 rounded-lg">{userData.language}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`${cardClass} p-5 rounded-[2rem] border`}>
+                  <h3 className="text-sm font-black uppercase text-indigo-400 mb-4 flex items-center gap-2">
+                    <BarChart3 size={16} />
+                    Reports & Export
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <button 
+                      onClick={() => generateReport('weekly')}
+                      className="w-full p-4 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl flex justify-between items-center hover:scale-[1.02] active:scale-95 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText size={18} className="text-indigo-400" />
+                        <div className="text-left">
+                          <p className="text-sm font-black">Weekly Report</p>
+                          <p className="text-[8px] opacity-40 uppercase">Last 7 days summary</p>
+                        </div>
+                      </div>
+                      <Download size={16} className="text-indigo-400 group-hover:translate-y-0.5 transition-transform" />
+                    </button>
+
+                    <button 
+                      onClick={() => generateReport('monthly')}
+                      className="w-full p-4 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl flex justify-between items-center hover:scale-[1.02] active:scale-95 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText size={18} className="text-emerald-400" />
+                        <div className="text-left">
+                          <p className="text-sm font-black">Monthly Report</p>
+                          <p className="text-[8px] opacity-40 uppercase">This month summary</p>
+                        </div>
+                      </div>
+                      <Download size={16} className="text-emerald-400 group-hover:translate-y-0.5 transition-transform" />
+                    </button>
+
+                    <button 
+                      onClick={downloadExcel}
+                      className="w-full p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-xl flex justify-between items-center hover:scale-[1.02] active:scale-95 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Download size={18} className="text-blue-400" />
+                        <div className="text-left">
+                          <p className="text-sm font-black">Export All Data</p>
+                          <p className="text-[8px] opacity-40 uppercase">Download as Excel</p>
+                        </div>
+                      </div>
+                      <Download size={16} className="text-blue-400 group-hover:translate-y-0.5 transition-transform" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`${cardClass} p-5 rounded-[2rem] border-2 border-rose-500/30`}>
+                  <h3 className="text-sm font-black uppercase text-rose-400 mb-4">⚠️ Danger Zone</h3>
+                  
+                  <div className="space-y-2">
+                    <button 
+                      onClick={resetAllData}
+                      className="w-full p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-between hover:bg-rose-500/20 active:scale-95 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Trash2 size={18} className="text-rose-400" />
+                        <div className="text-left">
+                          <p className="text-sm font-black text-rose-400">Reset All Data</p>
+                          <p className="text-[8px] opacity-60 uppercase">Delete everything permanently</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => signOut(auth)}
+                      className="w-full p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center justify-between hover:bg-rose-500/20 active:scale-95 transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        <LogOut size={18} className="text-rose-400" />
+                        <div className="text-left">
+                          <p className="text-sm font-black text-rose-400">Logout</p>
+                          <p className="text-[8px] opacity-60 uppercase">Sign out from app</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-center opacity-30 text-xs py-4 space-y-1">
+                  <p className="font-black">⚡ VIBE WALLET v1.0.0</p>
+                  <p className="text-[10px]">Made with ❤️ in Bangladesh</p>
+                </div>
+              </div>
+            )}
 
             {/* NAVIGATION */}
             <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-sm ${darkMode ? 'bg-[#161B22]/90' : 'bg-slate-900/90'} backdrop-blur-xl p-2 rounded-[2.5rem] flex justify-between items-center z-50 border border-white/10 shadow-2xl`}>
@@ -536,7 +893,8 @@ function App() {
                 { id: 'transactions', icon: ArrowLeftRight, label: 'Cash' }, 
                 { id: 'calendar', icon: CalendarIcon, label: 'History' },
                 { id: 'shopping', icon: ShoppingCart, label: 'Shop' }, 
-                { id: 'debts', icon: Users, label: 'Debt' } 
+                { id: 'debts', icon: Users, label: 'Debt' },
+                { id: 'profile', icon: User, label: 'Profile' }
               ].map(item => (
                 <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center flex-1 py-3 rounded-3xl transition-all duration-300 ${activeTab === item.id ? 'bg-indigo-600 text-white scale-110 shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}>
                   <item.icon size={18} strokeWidth={activeTab === item.id ? 3 : 2} />
