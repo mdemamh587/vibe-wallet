@@ -344,35 +344,190 @@ function App() {
               </div>
             )}
 
-            {/* DEBTS TAB */}
-            {activeTab === 'debts' && (
-              <div className="space-y-4">
-                <div className={`${cardClass} p-6 rounded-[2rem] border`}>
-                  <h3 className="font-black mb-4 text-indigo-500 text-center uppercase tracking-widest">Debt Manager</h3>
-                  <input value={debtName} onChange={(e) => setDebtName(e.target.value)} placeholder="Person Name" className={`w-full p-4 ${inputClass} rounded-xl border mb-3 outline-none`} />
-                  <div className="flex gap-2">
-                    <input type="number" value={debtAmount} onChange={(e) => setDebtAmount(e.target.value)} placeholder="Amount" className={`flex-1 p-4 ${inputClass} rounded-xl border font-bold`} />
-                    <select value={debtType} onChange={(e) => setDebtType(e.target.value)} className={`p-4 rounded-xl ${inputClass} border text-[10px] font-bold`}>
-                      <option value="Obtain Money">GET</option>
-                      <option value="Loan">GIVE</option>
-                    </select>
-                    <button onClick={() => {if(debtName && debtAmount){push(ref(db, 'debts/'+user.uid), {name: debtName, amount: parseFloat(debtAmount), type: debtType}); setDebtName(''); setDebtAmount('')}}} className="p-4 bg-indigo-600 text-white rounded-xl active:scale-90"><Plus/></button>
-                  </div>
-                </div>
-                {debts.map(d => (
-                  <div key={d.id} className={`p-4 rounded-2xl border flex justify-between items-center transition-all ${d.type === 'Obtain Money' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/5 border-rose-500/20 text-rose-500'}`}>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase opacity-60">{d.type === 'Obtain Money' ? 'Receive' : 'Pay'}</p>
-                      <p className="font-black text-lg">{d.name}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-lg font-black">৳{d.amount}</span>
-                      <button onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))} className="text-2xl font-light opacity-50">×</button>
-                    </div>
-                  </div>
-                ))}
+{/* DEBTS TAB - UPDATED DESIGN */}
+{activeTab === 'debts' && (
+  <div className="space-y-4">
+    {/* Header with Icon */}
+    <div className="text-center mb-6">
+      <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600/20 rounded-full mb-3">
+        <Users size={32} className="text-indigo-500" />
+      </div>
+      <h2 className="text-2xl font-black uppercase tracking-widest text-indigo-400">Debt Manager</h2>
+      <p className="text-xs opacity-40 mt-1">Track who owes you and who you owe</p>
+    </div>
+
+    {/* Summary Cards */}
+    <div className="grid grid-cols-2 gap-3 mb-6">
+      {/* Receive Card */}
+      <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-2 border-emerald-500/30 rounded-2xl p-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full -mr-10 -mt-10"></div>
+        <ArrowLeftRight size={20} className="text-emerald-500 mb-2 rotate-90" />
+        <p className="text-[9px] font-black uppercase tracking-wider text-emerald-400/60">You'll Receive</p>
+        <p className="text-2xl font-black text-emerald-400 mt-1">৳{totalObtain.toLocaleString()}</p>
+        <div className="mt-2 flex items-center gap-1">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+          <span className="text-[8px] text-emerald-400/60 font-bold">{debts.filter(d => d.type === 'Obtain Money').length} people</span>
+        </div>
+      </div>
+
+      {/* Payable Card */}
+      <div className="bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-2 border-rose-500/30 rounded-2xl p-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-20 h-20 bg-rose-500/5 rounded-full -mr-10 -mt-10"></div>
+        <ArrowLeftRight size={20} className="text-rose-500 mb-2 -rotate-90" />
+        <p className="text-[9px] font-black uppercase tracking-wider text-rose-400/60">You'll Pay</p>
+        <p className="text-2xl font-black text-rose-400 mt-1">৳{totalLoan.toLocaleString()}</p>
+        <div className="mt-2 flex items-center gap-1">
+          <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
+          <span className="text-[8px] text-rose-400/60 font-bold">{debts.filter(d => d.type === 'Loan').length} people</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Net Balance */}
+    <div className={`${cardClass} p-4 rounded-2xl border text-center`}>
+      <p className="text-[8px] font-black uppercase opacity-40 mb-1">Net Balance</p>
+      <p className={`text-xl font-black ${(totalObtain - totalLoan) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+        {(totalObtain - totalLoan) >= 0 ? '+' : ''}৳{(totalObtain - totalLoan).toLocaleString()}
+      </p>
+    </div>
+
+    {/* Add New Debt Form */}
+    <div className={`${cardClass} p-5 rounded-[2rem] border`}>
+      <h3 className="font-black mb-4 text-indigo-500 flex items-center gap-2">
+        <Plus size={18} />
+        ADD NEW DEBT
+      </h3>
+      
+      <div className="space-y-3">
+        <input 
+          value={debtName} 
+          onChange={(e) => setDebtName(e.target.value)} 
+          placeholder="Person's Name" 
+          className={`w-full p-4 ${inputClass} rounded-xl border outline-none focus:border-indigo-500 transition-all font-bold text-sm`} 
+        />
+        
+        <input 
+          type="number" 
+          value={debtAmount} 
+          onChange={(e) => setDebtAmount(e.target.value)} 
+          placeholder="Amount (৳)" 
+          className={`w-full p-4 ${inputClass} rounded-xl border font-black text-sm outline-none focus:border-indigo-500 transition-all`} 
+        />
+
+        <div className="grid grid-cols-2 gap-2">
+          <button 
+            onClick={() => setDebtType('Obtain Money')}
+            className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${debtType === 'Obtain Money' ? 'bg-emerald-600 border-emerald-400 text-white scale-95' : 'border-gray-700 text-gray-500'}`}
+          >
+            💰 I'll GET
+          </button>
+          <button 
+            onClick={() => setDebtType('Loan')}
+            className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${debtType === 'Loan' ? 'bg-rose-600 border-rose-400 text-white scale-95' : 'border-gray-700 text-gray-500'}`}
+          >
+            💸 I'll GIVE
+          </button>
+        </div>
+
+        <button 
+          onClick={() => {
+            if(debtName && debtAmount){
+              push(ref(db, 'debts/'+user.uid), {
+                name: debtName, 
+                amount: parseFloat(debtAmount), 
+                type: debtType
+              }); 
+              setDebtName(''); 
+              setDebtAmount('');
+            }
+          }}
+          className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-black text-sm active:scale-95 transition-all shadow-lg shadow-indigo-500/30"
+        >
+          ADD DEBT
+        </button>
+      </div>
+    </div>
+
+    {/* Debt Lists - Receive Section */}
+    {debts.filter(d => d.type === 'Obtain Money').length > 0 && (
+      <div className="space-y-2">
+        <h4 className="text-xs font-black uppercase opacity-40 px-2 flex items-center gap-2">
+          <ArrowLeftRight size={14} className="text-emerald-500 rotate-90" />
+          People who owe you
+        </h4>
+        {debts.filter(d => d.type === 'Obtain Money').map(d => (
+          <div 
+            key={d.id} 
+            className="bg-gradient-to-r from-emerald-500/10 to-transparent border border-emerald-500/20 p-4 rounded-2xl flex justify-between items-center group hover:scale-[1.02] transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center font-black text-emerald-400 text-lg border-2 border-emerald-500/30">
+                {d.name.charAt(0).toUpperCase()}
               </div>
-            )}
+              <div>
+                <p className="font-black text-white">{d.name}</p>
+                <p className="text-[8px] uppercase font-bold text-emerald-400/60 tracking-wider">Will pay you</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-black text-emerald-400">৳{d.amount}</span>
+              <button 
+                onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))}
+                className="opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-rose-500/20 rounded-lg"
+              >
+                <span className="text-rose-500 text-2xl font-light">×</span>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Debt Lists - Pay Section */}
+    {debts.filter(d => d.type === 'Loan').length > 0 && (
+      <div className="space-y-2">
+        <h4 className="text-xs font-black uppercase opacity-40 px-2 flex items-center gap-2">
+          <ArrowLeftRight size={14} className="text-rose-500 -rotate-90" />
+          People you owe
+        </h4>
+        {debts.filter(d => d.type === 'Loan').map(d => (
+          <div 
+            key={d.id} 
+            className="bg-gradient-to-r from-rose-500/10 to-transparent border border-rose-500/20 p-4 rounded-2xl flex justify-between items-center group hover:scale-[1.02] transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center font-black text-rose-400 text-lg border-2 border-rose-500/30">
+                {d.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-black text-white">{d.name}</p>
+                <p className="text-[8px] uppercase font-bold text-rose-400/60 tracking-wider">You owe them</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-black text-rose-400">৳{d.amount}</span>
+              <button 
+                onClick={() => remove(ref(db, `debts/${user.uid}/${d.id}`))}
+                className="opacity-0 group-hover:opacity-100 transition-all p-2 hover:bg-rose-500/20 rounded-lg"
+              >
+                <span className="text-rose-500 text-2xl font-light">×</span>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Empty State */}
+    {debts.length === 0 && (
+      <div className="text-center py-16 opacity-20">
+        <Users className="mx-auto mb-4" size={48} />
+        <p className="text-sm font-bold">No debts recorded</p>
+        <p className="text-xs mt-1">Add your first debt above</p>
+      </div>
+    )}
+  </div>
+)}
 
             {/* NAVIGATION */}
             <nav className={`fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-sm ${darkMode ? 'bg-[#161B22]/90' : 'bg-slate-900/90'} backdrop-blur-xl p-2 rounded-[2.5rem] flex justify-between items-center z-50 border border-white/10 shadow-2xl`}>
