@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { auth, googleProvider, signInWithPopup, signOut, db, ref, push, onValue } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { remove, set } from 'firebase/database';
-import { ShoppingCart, ArrowLeftRight, Users, Plus, Home, LogOut, CheckCircle2, Zap, Moon, Sun, Calendar as CalendarIcon, Bell, Info, Download, User, Edit2, Save, X, Camera, BarChart3, Phone, Mail, Globe, DollarSign, FileText, Trash2 } from 'lucide-react';
+import { ShoppingCart, ArrowLeftRight, Users, Plus, Home, LogOut, CheckCircle2, Zap, Moon, Sun, Calendar as CalendarIcon, Bell, Info, Download, User, Edit2, Save, X, Camera, BarChart3, Phone, Mail, Globe, DollarSign, FileText, Trash2, Clock, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import * as XLSX from 'xlsx';
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -22,7 +23,14 @@ function App() {
   // 🔔 Shopping Reminder Alert States
 const [showAlert, setShowAlert] = useState(false);
 const [todayReminders, setTodayReminders] = useState([]);
-
+// Mark Shopping Item as Done from Alert
+const markShopAsDone = (id) => {
+  set(ref(db, `shopping/${user.uid}/${id}/done`), true);
+  setTodayReminders(prev => prev.filter(item => item.id !== id));
+  if (todayReminders.length === 1) {
+    setShowAlert(false);
+  }
+};
   const [shopItem, setShopItem] = useState('');
   const [shopPriority, setShopPriority] = useState('Normal'); 
   const [debts, setDebts] = useState([]);
@@ -157,10 +165,21 @@ const checkTodayReminders = () => {
           if (snapshot.exists()) setWallets(snapshot.val());
         });
         // Load shopping list
-        onValue(ref(db, 'shopping/' + currentUser.uid), (snapshot) => {
-          const data = snapshot.val();
-          setShoppingList(data ? Object.keys(data).map(id => ({ id, ...data[id] })) : []);
-        });
+onValue(ref(db, 'shopping/' + currentUser.uid), (snapshot) => {
+  const data = snapshot.val();
+  const list = data ? Object.keys(data).map(id => ({ id, ...data[id] })) : [];
+  setShoppingList(list);
+  // Check reminders whenever shopping list updates
+  setTimeout(checkTodayReminders, 500);
+});
+// 🔁 Check reminders every 1 minute
+useEffect(() => {
+  if (user) {
+    const interval = setInterval(checkTodayReminders, 60000);
+    return () => clearInterval(interval);
+  }
+}, [user, shoppingList]);
+
         // Load debts
         onValue(ref(db, 'debts/' + currentUser.uid), (snapshot) => {
           const data = snapshot.val();
@@ -622,6 +641,56 @@ const generateReport = (type) => {
   return (
     <div className={`min-h-screen ${themeClass} font-sans transition-colors duration-300`}>
       <div className="max-w-md mx-auto p-4 pb-32 relative z-10">
+        {/* 🔔 REMINDER ALERT POPUP */}
+{showAlert && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+    <div className="w-full max-w-md bg-gradient-to-br from-rose-500/20 to-orange-500/20 border-2 border-rose-500 rounded-[2rem] p-6 shadow-2xl animate-slideUp">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center animate-bounce">
+            <Bell size={24} className="text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-rose-400">REMINDER ALERT!</h3>
+            <p className="text-xs opacity-60">You have {todayReminders.length} task{todayReminders.length > 1 ? 's' : ''} today</p>
+          </div>
+        </div>
+        <button onClick={() => setShowAlert(false)} className="p-2 hover:bg-white/10 rounded-lg transition-all">
+          <X size={20} />
+        </button>
+      </div>
+      <div className="space-y-3 max-h-96 overflow-y-auto">
+        {todayReminders.map(item => (
+          <div key={item.id} className="bg-[#161B22] border border-rose-500/30 rounded-xl p-4 flex items-start gap-3 hover:border-rose-500/50 transition-all">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <ShoppingCart size={16} className="text-rose-400" />
+                <span className={`px-2 py-0.5 rounded-full text-[8px] font-black ${
+                  item.priority === 'Urgent' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 
+                  item.priority === 'Normal' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                  'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                }`}>{item.priority}</span>
+              </div>
+              <p className="font-bold text-sm text-white">{item.text}</p>
+              <p className="text-[10px] opacity-40 mt-1">
+                📅 Today {item.remindTime && `• 🕒 ${item.remindTime}`}
+              </p>
+            </div>
+            <button onClick={() => markShopAsDone(item.id)} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-black transition-all active:scale-90 flex items-center gap-1">
+              <CheckCircle2 size={14} />DONE
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-2 mt-6">
+        <button onClick={() => setShowAlert(false)} className="py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-black text-xs transition-all active:scale-95">CLOSE</button>
+        <button onClick={() => { playAlertSound(); triggerVibration(); }} className="py-3 bg-rose-600 hover:bg-rose-700 rounded-xl font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-2">
+          <Bell size={14} />REPLAY
+        </button>
+      </div>
+    </div>
+  </div>
+)}
         {!user ? (
           <div className="mt-32 text-center p-8 border rounded-[2.5rem] bg-[#161B22] border-gray-800">
             <Zap className="text-indigo-500 mx-auto mb-4" size={50} fill="currentColor" />
