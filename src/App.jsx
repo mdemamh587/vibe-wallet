@@ -717,46 +717,116 @@ const generateReport = (type) => {
 
             {/* HOME TAB */}
             {activeTab === 'home' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-2">
-                  {[{l:'Today', v:'today'}, {l:'Week', v:'week'}, {l:'Month', v:'month'}].map(s => (
-                    <div key={s.l} className={`${cardClass} p-3 rounded-2xl border text-center`}>
-                      <p className="text-[8px] font-black uppercase opacity-40">{s.l}</p>
-                      <p className="text-xs font-black text-rose-500">৳{getStats(s.v)}</p>
+              <div className="space-y-5">
+                {/* Hero Balance Card - Enhanced */}
+                <div className="relative overflow-hidden rounded-[2.5rem] p-8 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 shadow-2xl shadow-indigo-500/30">
+                  <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                  <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-white/70 text-xs font-bold uppercase tracking-wider">Total Balance</p>
+                      <Zap className="text-yellow-300 animate-pulse" size={20} fill="currentColor" />
+                    </div>
+                    <h2 className="text-5xl font-black text-white mb-6 tracking-tight">৳{totalBalance.toLocaleString()}</h2>
+                    
+                    <div className="grid grid-cols-3 gap-3">
+                      {['Cash', 'Nagad', 'Upay'].map(w => (
+                        <div key={w} className="bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/20 hover:bg-white/20 transition-all">
+                          <p className="text-white/60 text-[9px] font-bold uppercase mb-1">{w}</p>
+                          <p className="text-white text-sm font-black">৳{wallets[w] || 0}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats Cards - Glassmorphism Style */}
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    {l:'Today', v:'today', icon:'🌅', gradient:'from-orange-500 to-rose-500'}, 
+                    {l:'Week', v:'week', icon:'📅', gradient:'from-blue-500 to-cyan-500'}, 
+                    {l:'Month', v:'month', icon:'📊', gradient:'from-purple-500 to-pink-500'}
+                  ].map(s => (
+                    <div key={s.l} className={`relative overflow-hidden rounded-2xl p-4 bg-gradient-to-br ${s.gradient} shadow-lg hover:scale-105 active:scale-95 transition-all`}>
+                      <div className="absolute inset-0 bg-black/20"></div>
+                      <div className="relative z-10">
+                        <span className="text-2xl mb-2 block">{s.icon}</span>
+                        <p className="text-white/80 text-[8px] font-black uppercase tracking-wider mb-1">{s.l}</p>
+                        <p className="text-white text-base font-black">৳{getStats(s.v)}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className={`p-6 rounded-[2rem] ${darkMode ? 'bg-indigo-900/20' : 'bg-indigo-600 text-white'} border border-indigo-500/30 text-center`}>
-                   <p className="text-[10px] font-black uppercase opacity-60">Total Balance</p>
-                   <h2 className="text-4xl font-black my-4">৳{totalBalance.toLocaleString()}</h2>
-                   <div className="grid grid-cols-3 gap-2">
-                      {['Cash', 'Nagad', 'Upay'].map(w => (
-                        <div key={w} className="p-2 bg-black/20 rounded-xl border border-white/5">
-                          <p className="text-[8px] font-bold uppercase">{w}</p>
-                          <p className="text-[10px] font-black">৳{wallets[w] || 0}</p>
-                        </div>
-                      ))}
-                   </div>
-                </div>
+
+                {/* Debt Summary Cards - Enhanced */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className={`p-4 ${cardClass} rounded-2xl border`}>
-                    <p className="text-[9px] font-bold text-gray-500 uppercase">Receive</p>
-                    <p className="text-lg font-black text-emerald-500">৳{totalObtain}</p>
+                  <div className="relative overflow-hidden rounded-[1.8rem] p-5 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-2 border-emerald-500/30 backdrop-blur-sm hover:scale-[1.02] transition-all">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-12 -mt-12"></div>
+                    <div className="relative z-10">
+                      <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center mb-3">
+                        <ArrowLeftRight size={18} className="text-emerald-400 rotate-90" />
+                      </div>
+                      <p className="text-emerald-400/70 text-[9px] font-black uppercase tracking-wider mb-1">You'll Receive</p>
+                      <p className="text-2xl font-black text-emerald-400">৳{totalObtain}</p>
+                      <div className="mt-2 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-[8px] text-emerald-400/60 font-bold">{debts.filter(d => d.type === 'Obtain Money').length} people</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className={`p-4 ${cardClass} rounded-2xl border`}>
-                    <p className="text-[9px] font-bold text-gray-500 uppercase">Payable</p>
-                    <p className="text-lg font-black text-rose-500">৳{totalLoan}</p>
+
+                  <div className="relative overflow-hidden rounded-[1.8rem] p-5 bg-gradient-to-br from-rose-500/20 to-pink-500/20 border-2 border-rose-500/30 backdrop-blur-sm hover:scale-[1.02] transition-all">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full -mr-12 -mt-12"></div>
+                    <div className="relative z-10">
+                      <div className="w-10 h-10 bg-rose-500/20 rounded-full flex items-center justify-center mb-3">
+                        <ArrowLeftRight size={18} className="text-rose-400 -rotate-90" />
+                      </div>
+                      <p className="text-rose-400/70 text-[9px] font-black uppercase tracking-wider mb-1">You'll Pay</p>
+                      <p className="text-2xl font-black text-rose-400">৳{totalLoan}</p>
+                      <div className="mt-2 flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></div>
+                        <span className="text-[8px] text-rose-400/60 font-bold">{debts.filter(d => d.type === 'Loan').length} people</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className={`${cardClass} p-4 rounded-[2rem] border h-56`}>
-                   <ResponsiveContainer width="100%" height="100%">
+
+                {/* Chart Section - Enhanced */}
+                <div className={`${cardClass} p-6 rounded-[2.5rem] border-2 shadow-xl`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-black uppercase text-indigo-400 flex items-center gap-2">
+                      <BarChart3 size={16} />
+                      Spending Chart
+                    </h3>
+                    <div className="px-3 py-1 bg-indigo-500/10 rounded-full">
+                      <span className="text-[8px] font-black text-indigo-400">ALL TIME</span>
+                    </div>
+                  </div>
+                  {pieData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={220}>
                       <PieChart>
-                        <Pie data={pieData} innerRadius={45} outerRadius={60} dataKey="value" stroke="none">
+                        <Pie 
+                          data={pieData} 
+                          innerRadius={50} 
+                          outerRadius={80} 
+                          dataKey="value" 
+                          stroke="none"
+                          paddingAngle={2}
+                        >
                           {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
                         </Pie>
                         <Tooltip />
                       </PieChart>
-                   </ResponsiveContainer>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-52 flex items-center justify-center opacity-20">
+                      <div className="text-center">
+                        <BarChart3 size={40} className="mx-auto mb-2 opacity-50" />
+                        <p className="text-xs font-bold">No spending data yet</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
