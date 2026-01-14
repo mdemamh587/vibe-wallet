@@ -831,143 +831,257 @@ const generateReport = (type) => {
               </div>
             )}
 
-            {/* TRANSACTIONS TAB */}
-            {activeTab === 'transactions' && (
-              <div className="space-y-4">
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                   {['Cash', 'Nagad', 'Upay'].map(w => (
-                     <button key={w} onClick={() => setWallet(w)} className={`px-6 py-3 rounded-xl font-black text-xs border transition-all ${wallet === w ? 'bg-indigo-600 border-indigo-400 text-white' : cardClass + ' opacity-60'}`}>
-                       {w}
-                     </button>
-                   ))}
-                </div>
-                <button onClick={() => {const val = prompt("Enter Deposit Amount:"); if(val) set(ref(db, 'wallets/'+user.uid), {...wallets, [wallet]: (wallets[wallet]||0) + parseFloat(val)})}} className="w-full py-4 bg-emerald-600 rounded-2xl font-black active:scale-95 transition-all text-sm">+ DEPOSIT</button>
-                
-                <div className={`${cardClass} p-5 rounded-[2rem] border`}>
-                  <div className="grid grid-cols-4 gap-2 mb-4 max-h-60 overflow-y-auto p-1 scrollbar-hide">
-                    {categories.map(c => (
-                      <button key={c.name} onClick={() => setCategory(c.name)} 
-                        className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${category === c.name ? 'bg-indigo-600 border-indigo-400 scale-95' : 'bg-gray-800/10 border-transparent'}`}>
-                        <span className="text-xl mb-1">{c.icon}</span>
-                        <span className={`text-[9px] font-extrabold uppercase tracking-tight text-center leading-tight ${category === c.name ? 'text-white' : 'opacity-70'}`}>{c.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                  
-                  <form onSubmit={addExpense} className="space-y-3">
-                    <input required value={text} onChange={(e) => setText(e.target.value)} placeholder="Spent on?" className={`w-full p-4 ${inputClass} rounded-xl border font-bold text-sm outline-none focus:border-indigo-500`} />
-                    <div className="flex gap-2">
-                      <input required type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" className={`flex-1 p-4 ${inputClass} rounded-xl border font-black text-sm outline-none focus:border-indigo-500`} />
-                      <button type="submit" className="px-6 bg-indigo-600 text-white rounded-xl font-black text-sm active:scale-90 transition-all">SAVE</button>
-                    </div>
-                  </form>
-                </div>
+{activeTab === 'transactions' && (
+  <div className="space-y-4">
+    {/* Wallet Header Card */}
+    <div className="relative overflow-hidden rounded-[2rem] p-6 bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-600 shadow-xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+      <div className="relative z-10">
+        <p className="text-white/60 text-[10px] font-black uppercase tracking-wider mb-2">💳 Active Wallet</p>
+        <h3 className="text-3xl font-black text-white mb-1">{wallet}</h3>
+        <p className="text-white/80 text-sm font-bold">Balance: ৳{wallets[wallet] || 0}</p>
+      </div>
+    </div>
 
-                <div className="space-y-2">
-                  {expenses.slice(0, 15).map(e => (
-                    <div key={e.id} className={`p-4 ${cardClass} rounded-2xl border flex justify-between items-center`}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl bg-gray-500/10 p-2 rounded-lg">{categories.find(c => c.name === e.category)?.icon || '💰'}</span>
-                        <div>
-                          <p className="text-sm font-bold">{e.text}</p>
-                          <p className="text-[8px] opacity-40 uppercase font-black">{e.category} • {e.wallet}</p>
-                        </div>
-                      </div>
-                      <p className="text-rose-500 font-black">-৳{e.amount}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+    {/* Wallet Selector */}
+    <div className="grid grid-cols-3 gap-2">
+      {['Cash', 'Nagad', 'Upay'].map((w, idx) => (
+        <button key={w} onClick={() => setWallet(w)} className={`relative overflow-hidden p-4 rounded-2xl font-black text-xs border-2 transition-all ${wallet === w ? 'bg-gradient-to-br from-indigo-600 to-purple-600 border-indigo-400 text-white scale-105 shadow-lg' : cardClass + ' border-gray-700/50 opacity-60 hover:opacity-100'}`}>
+          <div className="text-2xl mb-1">{idx === 0 ? '💵' : idx === 1 ? '📱' : '💳'}</div>
+          <div className="text-[10px] uppercase tracking-wider">{w}</div>
+        </button>
+      ))}
+    </div>
+    
+    {/* Deposit Button */}
+    <button onClick={() => {const val = prompt("💰 Enter Deposit Amount:"); if(val) set(ref(db, 'wallets/'+user.uid), {...wallets, [wallet]: (wallets[wallet]||0) + parseFloat(val)})}} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl font-black active:scale-95 transition-all text-sm shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2">
+      <Plus size={18} />
+      DEPOSIT MONEY
+    </button>
+
+    {/* Category Picker & Expense Form */}
+    <div className={`${cardClass} p-5 rounded-[2.5rem] border-2 shadow-xl`}>
+      <h3 className="text-sm font-black uppercase text-indigo-400 mb-4 flex items-center gap-2">
+        <Plus size={16} />
+        Add New Expense
+      </h3>
+      
+      <div className="grid grid-cols-4 gap-2 mb-4 max-h-60 overflow-y-auto p-1 scrollbar-hide">
+        {categories.map(c => (
+          <button key={c.name} onClick={() => setCategory(c.name)} 
+            className={`relative overflow-hidden flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${category === c.name ? 'border-indigo-500 scale-95 shadow-lg' : 'border-transparent hover:border-gray-600'}`}
+            style={{background: category === c.name ? `${c.color}20` : 'transparent'}}>
+            <span className="text-2xl mb-1">{c.icon}</span>
+            <span className={`text-[8px] font-black uppercase tracking-tight text-center leading-tight ${category === c.name ? 'text-white' : 'opacity-50'}`}>{c.name}</span>
+            {category === c.name && (
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-xl"></div>
             )}
+          </button>
+        ))}
+      </div>
+      
+      <form onSubmit={addExpense} className="space-y-3">
+        <input required value={text} onChange={(e) => setText(e.target.value)} placeholder="কি কিনেছো? 🤔" className={`w-full p-4 ${inputClass} rounded-xl border-2 font-bold text-sm outline-none focus:border-indigo-500 transition-all`} />
+        <div className="flex gap-2">
+          <input required type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="৳ Amount" className={`flex-1 p-4 ${inputClass} rounded-xl border-2 font-black text-sm outline-none focus:border-indigo-500 transition-all`} />
+          <button type="submit" className="px-8 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-black text-sm active:scale-90 transition-all shadow-lg shadow-indigo-500/30">SAVE</button>
+        </div>
+      </form>
+    </div>
 
-            {/* CALENDAR/HISTORY TAB */}
-            {activeTab === 'calendar' && (
-              <div className="space-y-4">
-                <div className={`${cardClass} p-4 rounded-[2rem] border overflow-hidden custom-calendar`}>
-                  <Calendar 
-                    onChange={setSelectedDate} 
-                    value={selectedDate} 
-                    tileContent={getTileContent}
-                    className="w-full bg-transparent border-none text-inherit" 
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-black uppercase opacity-40 px-2 italic">{selectedDate.toDateString()}</h4>
-                  
-                  {dailyShops.map(s => (
-                    <div key={s.id} className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3">
-                      <Bell size={16} className="text-indigo-500" />
-                      <p className="text-sm font-black text-indigo-400">Remind: {s.text}</p>
-                    </div>
-                  ))}
-
-                  {dailyExpenses.length > 0 ? dailyExpenses.map(e => (
-                    <div key={e.id} className={`p-4 ${cardClass} rounded-2xl border flex justify-between items-center`}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{categories.find(c => c.name === e.category)?.icon}</span>
-                        <p className="font-bold text-sm">{e.text}</p>
-                      </div>
-                      <p className="text-rose-500 font-black">-৳{e.amount}</p>
-                    </div>
-                  ) ) : dailyShops.length === 0 && (
-                    <div className="text-center py-10 opacity-20">
-                      <Info className="mx-auto mb-2" />
-                      <p className="text-xs font-bold">No Records</p>
-                    </div>
-                  )}
-                </div>
+    {/* Recent Transactions */}
+    <div className="space-y-2">
+      <h4 className="text-[10px] font-black uppercase opacity-40 px-2 flex items-center gap-2 mb-2">
+        <Clock size={12} />
+        Recent Transactions
+      </h4>
+      {expenses.slice(0, 15).map(e => {
+        const cat = categories.find(c => c.name === e.category);
+        return (
+          <div key={e.id} className={`relative overflow-hidden p-4 ${cardClass} rounded-2xl border-2 flex justify-between items-center hover:scale-[1.02] transition-all group`}
+            style={{borderColor: `${cat?.color}30`}}>
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{background: `linear-gradient(90deg, ${cat?.color}10, transparent)`}}></div>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{background: `${cat?.color}20`}}>
+                {cat?.icon || '💰'}
               </div>
-            )}
-            {/* SHOPPING TAB */}
+              <div>
+                <p className="text-sm font-black">{e.text}</p>
+                <p className="text-[8px] opacity-40 uppercase font-black tracking-wider">{e.category} • {e.wallet}</p>
+              </div>
+            </div>
+            <div className="relative z-10 text-right">
+              <p className="text-rose-400 font-black text-lg">-৳{e.amount}</p>
+              <p className="text-[7px] opacity-30 font-bold">{new Date(e.createdAt).toLocaleDateString('en-GB')}</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+{activeTab === 'calendar' && (
+  <div className="space-y-4">
+    {/* Calendar Header */}
+    <div className="relative overflow-hidden rounded-[2rem] p-6 bg-gradient-to-br from-blue-600 via-cyan-600 to-teal-600 shadow-xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+      <div className="relative z-10 flex items-center justify-between">
+        <div>
+          <p className="text-white/60 text-[10px] font-black uppercase tracking-wider mb-1">📅 Selected Date</p>
+          <h3 className="text-2xl font-black text-white">{selectedDate.toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'})}</h3>
+        </div>
+        <div className="text-right">
+          <p className="text-white/60 text-[8px] font-black uppercase">Today's Activity</p>
+          <p className="text-white font-black text-xl">{dailyExpenses.length + dailyShops.length}</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Calendar Component */}
+    <div className={`${cardClass} p-4 rounded-[2.5rem] border-2 overflow-hidden custom-calendar shadow-xl`}>
+      <Calendar 
+        onChange={setSelectedDate} 
+        value={selectedDate} 
+        tileContent={getTileContent}
+        className="w-full bg-transparent border-none text-inherit" 
+      />
+    </div>
+
+    {/* Daily Summary Cards */}
+    <div className="grid grid-cols-2 gap-3">
+      <div className="bg-gradient-to-br from-rose-500/10 to-pink-500/10 border-2 border-rose-500/30 rounded-2xl p-4">
+        <div className="text-rose-400 text-2xl mb-2">💸</div>
+        <p className="text-[8px] font-black uppercase opacity-60">Expenses</p>
+        <p className="text-2xl font-black text-rose-400">{dailyExpenses.length}</p>
+      </div>
+      <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 rounded-2xl p-4">
+        <div className="text-indigo-400 text-2xl mb-2">📋</div>
+        <p className="text-[8px] font-black uppercase opacity-60">Reminders</p>
+        <p className="text-2xl font-black text-indigo-400">{dailyShops.length}</p>
+      </div>
+    </div>
+
+    {/* Activity List */}
+    <div className="space-y-3">
+      <h4 className="text-[10px] font-black uppercase opacity-40 px-2 italic flex items-center gap-2">
+        <CalendarIcon size={12} />
+        {selectedDate.toDateString()}
+      </h4>
+      
+      {dailyShops.map(s => (
+        <div key={s.id} className="relative overflow-hidden p-4 bg-gradient-to-r from-indigo-500/20 to-purple-500/10 border-2 border-indigo-500/30 rounded-2xl flex items-center gap-3 hover:scale-[1.02] transition-all">
+          <div className="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center">
+            <Bell size={20} className="text-indigo-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-black text-indigo-300">Shopping Reminder</p>
+            <p className="text-xs font-bold mt-1">{s.text}</p>
+          </div>
+        </div>
+      ))}
+
+      {dailyExpenses.length > 0 ? dailyExpenses.map(e => {
+        const cat = categories.find(c => c.name === e.category);
+        return (
+          <div key={e.id} className={`relative overflow-hidden p-4 ${cardClass} rounded-2xl border-2 flex justify-between items-center hover:scale-[1.02] transition-all`}
+            style={{borderColor: `${cat?.color}30`}}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{background: `${cat?.color}20`}}>
+                {cat?.icon}
+              </div>
+              <div>
+                <p className="font-bold text-sm">{e.text}</p>
+                <p className="text-[8px] opacity-40 uppercase font-black">{e.category}</p>
+              </div>
+            </div>
+            <p className="text-rose-400 font-black text-lg">-৳{e.amount}</p>
+          </div>
+        );
+      }) : dailyShops.length === 0 && (
+        <div className="text-center py-16 opacity-20">
+          <Info className="mx-auto mb-3" size={40} />
+          <p className="text-sm font-black">No Records</p>
+          <p className="text-xs mt-1">No activity on this date</p>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 {activeTab === 'shopping' && (
   <div className="space-y-4">
-    <div className={`${cardClass} p-6 rounded-[2rem] border`}>
-      <h3 className="font-black mb-4 text-indigo-500">SHOPPING LIST</h3>
+    {/* Shopping Header */}
+    <div className="relative overflow-hidden rounded-[2rem] p-6 bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-600 shadow-xl">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+      <div className="relative z-10 flex items-center justify-between">
+        <div>
+          <p className="text-white/60 text-[10px] font-black uppercase tracking-wider mb-1">🛒 Shopping List</p>
+          <h3 className="text-3xl font-black text-white">{shoppingList.filter(i => !i.done).length} Items</h3>
+        </div>
+        <div className="text-right">
+          <p className="text-white/60 text-[8px] font-black uppercase">Completed</p>
+          <p className="text-white font-black text-2xl">{shoppingList.filter(i => i.done).length}</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Add Item Form */}
+    <div className={`${cardClass} p-6 rounded-[2.5rem] border-2 shadow-xl`}>
+      <h3 className="font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-400 flex items-center gap-2">
+        <Plus size={18} />
+        ADD NEW ITEM
+      </h3>
+      
       <input 
         value={shopItem} 
         onChange={(e) => setShopItem(e.target.value)} 
-        placeholder="Item..." 
-        className={`w-full p-4 ${inputClass} rounded-xl border mb-3`} 
+        placeholder="কি কিনতে হবে? 🛍️" 
+        className={`w-full p-4 ${inputClass} rounded-xl border-2 mb-3 font-bold outline-none focus:border-orange-500 transition-all`} 
       />
       
-      {/* 📅 Date & 🕒 Time Input - Updated Grid */}
+      {/* Date & Time Input */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div>
-          <label className="text-[8px] font-black opacity-40 uppercase ml-1 flex items-center gap-1">
+          <label className="text-[9px] font-black opacity-40 uppercase ml-1 flex items-center gap-1 mb-2">
             <CalendarIcon size={10}/>Remind Date
           </label>
           <input 
             type="date" 
             id="remindDate" 
-            className={`w-full p-3 ${inputClass} rounded-xl border text-xs font-bold mt-1`} 
+            className={`w-full p-3 ${inputClass} rounded-xl border-2 text-xs font-bold focus:border-orange-500 outline-none transition-all`} 
           />
         </div>
         <div>
-          <label className="text-[8px] font-black opacity-40 uppercase ml-1 flex items-center gap-1">
+          <label className="text-[9px] font-black opacity-40 uppercase ml-1 flex items-center gap-1 mb-2">
             <Clock size={10}/>Time (Optional)
           </label>
           <input 
             type="time" 
             id="remindTime" 
-            className={`w-full p-3 ${inputClass} rounded-xl border text-xs font-bold mt-1`} 
+            className={`w-full p-3 ${inputClass} rounded-xl border-2 text-xs font-bold focus:border-orange-500 outline-none transition-all`} 
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        {['Urgent', 'Normal', 'Low'].map(p => (
+      {/* Priority Buttons */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {[
+          {name: 'Urgent', icon: '🔥', color: 'from-red-600 to-rose-600'},
+          {name: 'Normal', icon: '⚡', color: 'from-yellow-600 to-amber-600'},
+          {name: 'Low', icon: '🌙', color: 'from-blue-600 to-cyan-600'}
+        ].map(p => (
           <button 
-            key={p} 
-            onClick={() => setShopPriority(p)} 
-            className={`py-2 rounded-lg text-[8px] font-black border transition-all ${shopPriority === p ? 'bg-indigo-600 text-white' : 'opacity-40 border-gray-700'}`}
+            key={p.name} 
+            onClick={() => setShopPriority(p.name)} 
+            className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${shopPriority === p.name ? `bg-gradient-to-r ${p.color} text-white border-white/30 scale-95 shadow-lg` : 'opacity-40 border-gray-700 hover:opacity-70'}`}
           >
-            {p}
+            <div className="text-lg mb-1">{p.icon}</div>
+            {p.name}
           </button>
         ))}
       </div>
 
-      {/* ➕ ADD ITEM Button - Updated Function */}
+      {/* Add Button */}
       <button 
         onClick={() => {
           const dateInput = document.getElementById('remindDate').value;
@@ -985,33 +1099,70 @@ const generateReport = (type) => {
             document.getElementById('remindTime').value = '';
           }
         }} 
-        className="w-full py-4 bg-indigo-600 text-white rounded-xl font-black active:scale-95"
+        className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl font-black active:scale-95 transition-all shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2"
       >
-        ADD ITEM
+        <Plus size={18} />
+        ADD TO LIST
       </button>
     </div>
 
-    {/* 📋 SHOPPING LIST DISPLAY - Updated with Time */}
-    {shoppingList.map(i => (
-      <div 
-        key={i.id} 
-        onClick={() => set(ref(db, `shopping/${user.uid}/${i.id}/done`), !i.done)} 
-        className={`p-4 ${cardClass} rounded-xl border flex justify-between items-center transition-all ${i.done ? 'opacity-30 scale-95' : ''}`}
-      >
-        <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${i.priority === 'Urgent' ? 'bg-red-500 shadow-[0_0_8px_red]' : 'bg-indigo-500'}`}></div>
-          <div>
-            <p className={`font-bold ${i.done ? 'line-through' : ''}`}>{i.text}</p>
-            {i.remindDate && (
-              <p className="text-[7px] opacity-50 font-black uppercase tracking-widest mt-1">
-                📅 {new Date(i.remindDate).toDateString()} {i.remindTime && ` • 🕒 ${i.remindTime}`}
-              </p>
-            )}
+    {/* Shopping List Display */}
+    <div className="space-y-2">
+      <h4 className="text-[10px] font-black uppercase opacity-40 px-2 flex items-center gap-2 mb-2">
+        <ShoppingCart size={12} />
+        Your Shopping Items
+      </h4>
+      
+      {shoppingList.map(i => {
+        const priorityStyle = i.priority === 'Urgent' 
+          ? 'from-red-500/20 to-rose-500/10 border-red-500/40' 
+          : i.priority === 'Normal' 
+          ? 'from-yellow-500/20 to-amber-500/10 border-yellow-500/40'
+          : 'from-blue-500/20 to-cyan-500/10 border-blue-500/40';
+        
+        const priorityDot = i.priority === 'Urgent' 
+          ? 'bg-red-500 shadow-[0_0_12px_red]' 
+          : i.priority === 'Normal'
+          ? 'bg-yellow-500 shadow-[0_0_8px_yellow]'
+          : 'bg-blue-500 shadow-[0_0_8px_blue]';
+        
+        return (
+          <div 
+            key={i.id} 
+            onClick={() => set(ref(db, `shopping/${user.uid}/${i.id}/done`), !i.done)} 
+            className={`relative overflow-hidden p-4 bg-gradient-to-r ${priorityStyle} rounded-2xl border-2 flex justify-between items-center transition-all hover:scale-[1.02] ${i.done ? 'opacity-40 scale-95' : ''}`}
+          >
+            <div className="flex items-center gap-3 flex-1">
+              <div className={`w-3 h-3 rounded-full ${priorityDot} animate-pulse`}></div>
+              <div className="flex-1">
+                <p className={`font-black text-sm ${i.done ? 'line-through opacity-50' : ''}`}>{i.text}</p>
+                {i.remindDate && (
+                  <p className="text-[8px] opacity-50 font-black uppercase tracking-wider mt-1 flex items-center gap-2">
+                    <CalendarIcon size={10} />
+                    {new Date(i.remindDate).toLocaleDateString('en-GB')} 
+                    {i.remindTime && <><Clock size={10} />{i.remindTime}</>}
+                  </p>
+                )}
+                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[7px] font-black ${
+                  i.priority === 'Urgent' ? 'bg-red-500/30 text-red-300' : 
+                  i.priority === 'Normal' ? 'bg-yellow-500/30 text-yellow-300' :
+                  'bg-blue-500/30 text-blue-300'
+                }`}>{i.priority}</span>
+              </div>
+            </div>
+            <CheckCircle2 size={22} className={i.done ? 'text-emerald-500' : 'opacity-20'} strokeWidth={3} />
           </div>
+        );
+      })}
+      
+      {shoppingList.length === 0 && (
+        <div className="text-center py-16 opacity-20">
+          <ShoppingCart className="mx-auto mb-3" size={40} />
+          <p className="text-sm font-black">No Shopping Items</p>
+          <p className="text-xs mt-1">Add your first item above</p>
         </div>
-        <CheckCircle2 size={18} className={i.done ? 'text-indigo-500' : 'opacity-20'} />
-      </div>
-    ))}
+      )}
+    </div>
   </div>
 )}
             {/* DEBTS TAB - UPDATED DESIGN */}
